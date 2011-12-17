@@ -44,7 +44,34 @@ x_part({X,_}) -> X.
 y_part({_,Y}) -> Y.
 ----------
 
+| And in case I want a mutable version?
+| That depends.  Will it need object identity?
 
+Or will it be referred to by multiple entities, so that if one of them modifies the Point, that change will be visible by the others?
+
+| Let's say that it's a ``no'' to both those questions, for the time being.
+| Then we can just use the same immutable Point implementation.
+Instead of modifying the Point object, we can replace it with a
+derived version, and no-one can tell the difference.
+
+| And if I need object identity?
+a|
+A simple way is to use `make_ref()` to generate a unique ID, and
+re-use that in the derived versions:
+
+----------
+make_point(X, Y) -> {make_ref(), X,Y}.
+scale(T, {ID,X,Y}) -> {ID, T*X, T*Y}.
+translate({DX,DY}, {ID,X,Y}) -> {ID, X+DX, Y+DY}.
+x_part({_,X,_}) -> X.
+y_part({_,_,Y}) -> Y.
+same({ID1,_,_}, {ID2,_,_}) -> ID1 =:= ID2.
+----------
+
+| And for a mutable object which is known by more than one entity?
+Shared state, you might call it.
+| Then we need a level of indirection. [TODO]
+// Possibilities: A process; an ETS row.
 
 |==================
 
