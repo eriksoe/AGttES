@@ -2,7 +2,7 @@ How to program with style if you haven't got class
 ==================================================
 Erik Søe Sørensen <eriksoe@gmail.com>
 
-[cols="2*asciidoc"]
+[cols="2", width="100%"]
 |==================
 | I've got this class which I have to implement in Erlang...
 | I'm sure it's a nice class :-)
@@ -19,8 +19,10 @@ Erik Søe Sørensen <eriksoe@gmail.com>
 | Such as?
 | For instance, some classes are thread-safe, while others are not.
 Only some classes are serializable; only some are immutable. And a few are singletons.
+
 For some classes, object identity matters, for others it doesn't.
 And only some classes are genuinely designed for inheritance.
+
 Finally, a mutable object may be shared, or there may be just a single reference to it.
 
 | And these differences matter?
@@ -31,7 +33,8 @@ In a concurrent and possibly distributed setting, they matter a great deal.
 | First and foremost: immutability. Does the object have mutable state, or does it contain the same information throughout its lifetime? Numbers, Java strings, and read-only collections are examples of immutable objects.
 
 | OK, let's take an example: the text-book ``Point'' class. Immutable version first -- how would you represent a Point with translation and scaling operations?
-| Immutable objects are represented as terms. Operations on those objects are represented as functions. A Point, for instance, could be represented as a pair -- a 2-tuple +{X,Y}+:
+a|
+Immutable objects are represented as terms. Operations on those objects are represented as functions. A Point, for instance, could be represented as a pair -- a 2-tuple +{X,Y}+:
 
 ----------
 make_point(X, Y) -> {X,Y}.
