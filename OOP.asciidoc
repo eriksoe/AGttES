@@ -2,6 +2,8 @@ How to program with style if you haven't got class
 ==================================================
 Erik Søe Sørensen <eriksoe@gmail.com>
 
+== Square peg, meet round hole ==
+
 [cols="2", width="100%"]
 |==================
 | I've got this class which I have to implement in Erlang...
@@ -13,12 +15,13 @@ Erik Søe Sørensen <eriksoe@gmail.com>
 | What kinds are there? I'm used to a uniform class concept.
 | It may not be as uniform as you think.
 
-| Sure it is. The keyword `class', then a class name, a curly opening brace, then a bunch of definitions... and then a closing brace.
+| Sure it is. The keyword `class', then a class name, an optional inheritance description, a curly opening brace, then a bunch of definitions... and then a closing brace.
 | Semantics matter more than syntax. The syntactic similarities may hide significant semantic differences.
 
 | Such as?
 | For instance, some classes are thread-safe, while others are not.
-Only some classes are serializable; only some are immutable. And a few are singletons.
+Only some classes are serializable; only some are immutable.
+Some don't have any state, and a few are singletons.
 
 For some classes, object identity matters, for others it doesn't.
 And only some classes are genuinely designed for inheritance.
@@ -44,34 +47,40 @@ x_part({X,_}) -> X.
 y_part({_,Y}) -> Y.
 ----------
 
-| And in case I want a mutable version?
-| That depends.  Will it need object identity?
+| That means that objects with the same data will be indistinguishable.
+I guess a good thing about that is that I won't need to implement a comparison function (`equals()` in Java).
 
-Or will it be referred to by multiple entities, so that if one of them modifies the Point, that change will be visible by the others?
+But what if I want immutable objects with object identity?
 
-| Let's say that it's a ``no'' to both those questions, for the time being.
-| Then we can just use the same immutable Point implementation.
-Instead of modifying the Point object, we can replace it with a
-derived version, and no-one can tell the difference.
-
-| And if I need object identity?
 a|
-A simple way is to use `make_ref()` to generate a unique ID, and
-re-use that in the derived versions:
+Then use `make_ref()` to generate a unique ID, and include that in the data, like so:
 
 ----------
 make_point(X, Y) -> {make_ref(), X,Y}.
-scale(T, {ID,X,Y}) -> {ID, T*X, T*Y}.
-translate({DX,DY}, {ID,X,Y}) -> {ID, X+DX, Y+DY}.
 x_part({_,X,_}) -> X.
 y_part({_,_,Y}) -> Y.
 same({ID1,_,_}, {ID2,_,_}) -> ID1 =:= ID2.
 ----------
 
+| And in case I want a mutable version?
+| That depends.
+Will it be referred to by multiple entities, so that if one of them modifies the Point, that change will be visible by the others?
+
+| For the time being, let's say it's a ``no'' -- that the object only has one referrer.
+| Then we can just use the same immutable Point implementation.
+Instead of modifying the Point object, we can replace it with a
+derived version, and no-one can tell the difference.
+
 | And for a mutable object which is known by more than one entity?
 Shared state, you might call it.
-| Then we need a level of indirection. [TODO]
+| This is where things start to get interesting.
+
+An important part of Erlang program design is figuring out which state there is to keep track of, and where the different pieces of state should be put.
+// TODO: About places to put state.
+
+// Primary question:  Is it shared within a thread of execution, or between threads?
+
+// | Then we need a level of indirection. [TODO]
 // Possibilities: A process; an ETS row.
 
 |==================
-
