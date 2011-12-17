@@ -62,7 +62,45 @@ y_part({_,_,Y}) -> Y.
 same({ID1,_,_}, {ID2,_,_}) -> ID1 =:= ID2.
 ----------
 
-| And in case I want a mutable version?
+| OK.
+
+By the way: you just added a field to the data type by extending the tuple.
+I take it that that's a normal thing to do... but if you need to do that repeatedly, you may end up with tuples of size 10, 20 or more. That must be confusing -- you'd need to be careful to remember the exact position of each field.
+| An alternative is to use records (which are tuples under the hood, but with syntactic sugar so that you can ignore all the fields that aren't relevant in a given context.
+
+You'd usually consider switching from raw tuples to records once you get to around 4 or 5 fields.
+
+| How would the Point-with-object identity example look if we were using records, then?
+a|
+Like so:
+
+----------
+-record(point, {id, x, y}).
+
+make_point(X, Y) -> #point{id=make_ref(), x=X, y=Y}.
+x_part(#point{x=X}) -> X.
+y_part(#point{y=Y}) -> Y.
+same({#point{id=ID1}, #point{id=ID2}) -> ID1 =:= ID2.
+----------
+
+Or, alternatively:
+
+----------
+-record(point, {id, x, y}).
+
+make_point(X, Y) -> #point{id=make_ref(), x=X, y=Y}.
+x_part(#point{x=X}) -> X.
+y_part(#point{y=Y}) -> Y.
+same({#point{id=ID1}, #point{id=ID2}) -> ID1 =:= ID2.
+----------
+
+|==================
+
+== Shared mutable state ==
+
+[cols="2", width="100%"]
+|==================
+| What if I want a mutable version of Point?
 | That depends.
 Will it be referred to by multiple entities, so that if one of them modifies the Point, that change will be visible by the others?
 
@@ -82,5 +120,10 @@ An important part of Erlang program design is figuring out which state there is 
 
 // | Then we need a level of indirection. [TODO]
 // Possibilities: A process; an ETS row.
+|==================
 
+== Subtype Polymorphism ==
+
+[cols="2", width="100%"]
+|==================
 |==================
