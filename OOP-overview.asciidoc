@@ -1,0 +1,114 @@
+OOP Overview
+============
+
+.How different kinds of objects may be represented
+[cols="2*,12*^", options="header"]
+|====================
+
+2+|
+12+| Combinations
+
+2+h| Property
+|1|2|3|4|5|6|7|8|9|10|11|12
+
+.3+| State
+| None
+|✔|✔|✔| | | | | | | | |
+
+| Immutable
+| | | |✔|✔|✔| | | | | |
+
+| Mutable
+| | | | | | |✔|✔|✔|✔|✔|✔
+
+14+|
+
+.3+| Polymorphism
+| None
+|✔| | |✔| | |✔| |✔| |✔|
+
+| Closed
+| |✔| | |✔| |✔| |✔| |✔|
+
+| Open
+| | |✔| | |✔| |✔| |✔| |✔
+
+14+|
+
+.3+| Sharing
+| Single referrer
+|✓|✓|✓|✓|✓|✓|✔|✔| | | |
+
+| Multiple referrers
+|✓|✓|✓|✓|✓|✓| | |✔|✔| |
+
+| Shared between threads
+|✓|✓|✓|✓|✓|✓| | | | |✔|✔
+
+14+.>h| Representable by...
+
+2+|
+|1|2|3|4|5|6|7|8|9|10|11|12
+
+2+| Term
+|✔|✔| |✔|✔| |✔| | | | |
+
+2+| Function object
+| | |✔| | |✔| | | | | |
+
+2+| VTable
+| | |✔| | |✔| | | | | |
+
+2+| (VTable,State) pair
+| | | | | | | |✔| | | |
+
+2+| ETS table
+| | | | | | | | |✔|✔|✔|✔
+
+2+| Process
+| | | | | | | | | |✔|✔|✔
+
+|====================
+
+.Comments
+[cols="^10%,90%", options="header"]
+|====================
+| Nr.
+| Comment
+
+| 1
+| Constant. Not a very interesting case.
+
+| 2
+| Atom naming the type
+
+| 3
+| Behaviour without state
+
+| 4
+| Classic monomorphic value object
+
+| 5
+| Records
+
+| 6
+| Behaviour with fixed state
+
+| 7
+| Threaded value
+
+| 8
+| Threaded value with vtable
+
+| 9
+| Mutable objects kept in an ETS table
+
+| 10
+| Mutable (VTable,State) pairs kept in an ETS table
+
+| 11
+| Public ETS table, or state kept by a process
+
+| 12
+| Public ETS table, or state kept by a process
+|====================
