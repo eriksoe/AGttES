@@ -80,18 +80,30 @@ Like so:
 make_point(X, Y) -> #point{id=make_ref(), x=X, y=Y}.
 x_part(#point{x=X}) -> X.
 y_part(#point{y=Y}) -> Y.
-same({#point{id=ID1}, #point{id=ID2}) -> ID1 =:= ID2.
+same(#point{id=ID1}, #point{id=ID2) -> ID1 =:= ID2.
 ----------
 
-Or, alternatively:
+Alternatively, the operations can be written in record-access rather
+than pattern-matching style:
 
 ----------
--record(point, {id, x, y}).
+x_part(P) -> P#point.x.
+y_part(P) -> P#point.y.
+same(P1, P2) -> P1#point.id =:= P2#point.id.
+----------
 
-make_point(X, Y) -> #point{id=make_ref(), x=X, y=Y}.
-x_part(#point{x=X}) -> X.
-y_part(#point{y=Y}) -> Y.
-same({#point{id=ID1}, #point{id=ID2}) -> ID1 =:= ID2.
+| That looks a bit shorter to me. Why bother with pattern matching in this case?
+a|
+Consider the case where more than one value is extracted from the same record:
+
+----------
+scale1(T, #point{x=X, y=Y}) -> {T*X, T*Y}.
+scale2(T, P) -> {T*P#point.x, T*P#point.y}.
+distance_from_origin1(#point{x=X, y=Y}) -> math:sqrt(X*X + Y*Y).
+distance_from_origin2(P) ->
+  X = P#point.x,
+  Y = P#point.y,
+  math:sqrt(X*X + Y*Y).
 ----------
 
 |==================
@@ -111,16 +123,109 @@ derived version, and no-one can tell the difference.
 
 | And for a mutable object which is known by more than one entity?
 Shared state, you might call it.
-| This is where things start to get interesting.
+| Then we need a level of indirection.
+
+| OK, so instead of storing the data, you store a reference to the data.
+And then you store the actual data somewhere else.
+| Yes. (That effectively reduces the ``multiple entities'' back into a single one.)
+
+The ``somewhere else'' could be another functional (immutable) data
+structure, but more often, the reference in question is a reference to
+a table or a process.
+
+| Ah. So now we're getting beyond a single, purely-functional process.
+| We are, and this is where things start to get interesting.
 
 An important part of Erlang program design is figuring out which state there is to keep track of, and where the different pieces of state should be put.
-// TODO: About places to put state.
 
-// Primary question:  Is it shared within a thread of execution, or between threads?
+| In a typical OOP language, state lives in the instance fields of objects, and the static fields or global variables or whatever the language's got.
+Oh, and of course in the local variables on the program stack.
+| In Erlang, the local variables on the stack are the primary place for state.
+Pure functional language have just that.
 
-// | Then we need a level of indirection. [TODO]
-// Possibilities: A process; an ETS row.
-|==================
+But Erlang's also got the process dictionary, ETS tables, and (for special purposes) the global registries of named processes and tables.
+
+And, of course, processes -- one of the possible raison d'être's of a process is ``to hold some state''.
+
+// (For cheating, you can also tuck away state in device drivers and native functions.)
+
+| When do you use what? What kinds of state go where?
+| You normally keep it in local variables.
+Constants can stay in code.
+
+Shared mutable state, however, usually take the form of either processes or tables. (More rarely, the process dictionary comes into use.)
+
+For singletons and truly global mutable state, you use named processes and tables.
+
+Tables are also used for some kinds of mutable data which aren't shared -- which could in principle just be stored in functional data structures.
+
+| Which kinds of data is that?
+| Collections which often grow large, or which have elements which are typically more or less constant over a long time, fit well into ETS tables.
+
+It also helps if the data has a primary key.
+
+| What are the advantages of tables?
+| One advantage is certainly constant lookup time (in unordered tables) when the primary key is known.
+
+And the reason tables are a good place to put large or slowly-mutating data sets is that it keeps it out of a process's heap, out of the way of the garbage collector.
+
+The major difference between normal functional data structures and ETS table is that tables perform destructive (in-place) updates.
+That means that you can't keep the old version of the table around --
+on the other hand, it means that you don't need to thread the current
+value of the data structure, which may at times lead to a simpler program structure.
+
+Also, tables can be named, and they can (if needed) be accessed -- safely -- by more than one process.
+
+| What of the drawbacks?
+| There are a few -- tables don't fit all kinds of data and access patterns; as just mentioned, they're not persistent, but updated destructively; they can't be serialized or used across nodes in a distributed system; and there's a limit to how many of them you can have at the same time.
+
+And because they're separate from the process heaps, data must be copied into and out of them, so data access is a bit less direct than for data on the heap.
+
+| Suppose I have some shared mutable state.
+How do I determine where to put it?
+| The primary question is: Is it shared _within_ a thread of
+  execution, or _between_ threads?
+
+If it is shared just within a single process, then it's probably fit
+to put into a table.  Especially if there's more than one of the items in question.
+
+| And if I'm sharing it between processes?
+| If data is shared between processes, then you need a process to hold it
+(which may be one of the existing processes, when that makes sense).
+
+That process will then handle get- and set-requests, or whatever
+operations are suitable.
+
+A process which holds many items in that way can of course do so by
+storing them in one or more tables.
+
+| So, for our shared mutable Point example: if it's shared within a
+  process, I can a) share a reference to it and keep the mutable value in a separate data structure; b) that data structure can be an ETS table.
+
+Or c) -- which works also for sharing between processes - I can make the Point into a process of its own, with getter and setter calls etc.
+| Or d) you decide that a single point is too light-weight to make into a process of its own, so you make a Point server process which keeps track of the state of whole lot of points.
+
+| But if there are many Points users, but only one such Point server,
+it might turn into a bottleneck.
+
+You mentioned that multiple processes can access one table?
+
+| Yes; a table can be private to a process, or other processes can be
+  allowed to either just read from it, or have both read and write
+  access to it.
+
+For information that is read-heavy, for instance, it may make sense to
+allow other processes to read directly from the table, rather than to
+force the process owning the table to service all of the requests
+pertaining to the table sequentially (which might make that process a
+bottleneck in the system).
+
+Whether such an approach makes sense, however, depends of course on
+whether the kinds of transactions which are needed are supported by
+the ETS tables.
+
+|====================
+
 
 == Subtype Polymorphism ==
 
