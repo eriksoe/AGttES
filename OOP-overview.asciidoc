@@ -70,6 +70,10 @@ OOP Overview
 
 |====================
 
+// TODO: Note on vtable: can be either a set of function objects (e.g. a record), or a Module implementing a behaviour.
+// TODO: Note on ETS tables vs. processes: Whether a table can be used, depends on the kinds of transactions which are needed.
+// TODO: Note on singletons: For compile-time constants, a term may be used. For all other cases, a named ETS table or process is needed.
+
 .Comments
 [cols="^10%,90%", options="header"]
 |====================
@@ -77,7 +81,12 @@ OOP Overview
 | Comment
 
 | 1
-| Constant. Not a very interesting case.
+a|
+
+Has neither value nor behaviour. There are two cases:
+
+- A unique reference, if object identity is used.
+- A dummy constant, otherwise.
 
 | 2
 | Atom naming the type
@@ -107,8 +116,8 @@ OOP Overview
 | Mutable (VTable,State) pairs kept in an ETS table
 
 | 11
-| Public ETS table, or state kept by a process
+| Non-private ETS table, or state kept by a process
 
 | 12
-| Public ETS table, or state kept by a process
+| Non-private ETS table, or state kept by a process
 |====================
