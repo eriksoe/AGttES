@@ -30,6 +30,7 @@ Finally, a mutable object may be shared, or there may be just a single reference
 
 | And these differences matter?
 | Even under normal circumstances, they matter to some degree.
+
 In a concurrent and possibly distributed setting, they matter a great deal.
 
 | So, what properties determine how I can best represent a concept in Erlang?
@@ -62,7 +63,7 @@ y_part({_,_,Y}) -> Y.
 same({ID1,_,_}, {ID2,_,_}) -> ID1 =:= ID2.
 ----------
 
-| OK.
+| I see.
 
 By the way: you just added a field to the data type by extending the tuple.
 I take it that that's a normal thing to do... but if you need to do that repeatedly, you may end up with tuples of size 10, 20 or more. That must be confusing -- you'd need to be careful to remember the exact position of each field.
@@ -220,9 +221,23 @@ force the process owning the table to service all of the requests
 pertaining to the table sequentially (which might make that process a
 bottleneck in the system).
 
-Whether such an approach makes sense, however, depends of course on
-whether the kinds of transactions which are needed are supported by
-the ETS tables.
+| And when wouldn't I want to do that?
+| Whether such an approach makes sense, depends on
+  whether the kinds of transactions which are needed are supported by
+  the ETS tables.
+
+  All ETS operations on individual rows are atomic.
+  You can even do an atomic addition or subtraction on a single cell,
+  or adjust multiple cells in the same row by constant offsets.
+
+| So in such cases I need not worry about race conditions, even if
+  multiple processes access the table concurrently.
+| No; ETS is thread-safe and provides explicit atomicity guarantees.
+
+  But transactions which involve more than one row, and most kinds of
+  transactions which involve both reads and writes, cannot be done
+  atomically.  So if you need such operations, you probably can't let
+  the table be accessed by more than one process.
 
 |====================
 
