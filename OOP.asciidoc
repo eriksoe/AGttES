@@ -67,7 +67,7 @@ same({ID1,_,_}, {ID2,_,_}) -> ID1 =:= ID2.
 
 By the way: you just added a field to the data type by extending the tuple.
 I take it that that's a normal thing to do... but if you need to do that repeatedly, you may end up with tuples of size 10, 20 or more. That must be confusing -- you'd need to be careful to remember the exact position of each field.
-| An alternative is to use records (which are tuples under the hood, but with syntactic sugar so that you can ignore all the fields that aren't relevant in a given context.
+| An alternative is to use records (which are tuples under the hood, but with syntactic sugar so that you can ignore all the fields that aren't relevant in a given context).
 
 You'd usually consider switching from raw tuples to records once you get to around 4 or 5 fields.
 
@@ -95,17 +95,28 @@ same(P1, P2) -> P1#point.id =:= P2#point.id.
 
 | That looks a bit shorter to me. Why bother with pattern matching in this case?
 a|
-Consider the case where more than one value is extracted from the same record:
+Consider the case where more than one value is extracted from the same record, or is used more than once:
 
 ----------
-scale1(T, #point{x=X, y=Y}) -> {T*X, T*Y}.
-scale2(T, P) -> {T*P#point.x, T*P#point.y}.
+scale1(T, #point3d{x=X, y=Y, z=Z}) -> #point3d{x=T*X, y=T*Y, z=T*Z}.
+scale2(T, P) -> #point3d{x=T*P#point3d.x, y=T*P#point3d.y, z=T*P#point3d.z}.
+
 distance_from_origin1(#point{x=X, y=Y}) -> math:sqrt(X*X + Y*Y).
 distance_from_origin2(P) ->
   X = P#point.x,
   Y = P#point.y,
   math:sqrt(X*X + Y*Y).
 ----------
+//rotate1(V, #point{x=X, y=Y}) ->
+//  S = math:sin(V), C = math:cos(V),
+//  #point{x = C*X - S*Y, y = C*Y + S*X}.
+//rotate2(V, P) ->
+//  S = math:sin(V), C = math:cos(V),
+//  #point{x = C*P#point.x - S*P#point.y,
+//         y = C*P#point.y + S*P#point.x}.
+
+Both length and clarity suffer when the record-access style is used,
+in these cases.
 
 |==================
 
