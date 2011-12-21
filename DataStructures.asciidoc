@@ -1,0 +1,154 @@
+Data structures
+==================================================
+Erik Søe Sørensen <eriksoe@gmail.com>
+
+// TODO: maybe some work on the titles.
+
+== Data structures ==
+
+[cols="2", width="100%"]
+|==================
+| I'm trying to figure out what Erlang data structures to use for my data.
+| Choosing the right data structure -- in any language -- does matter for both code clarity and performance.
+
+| Especially for the core data, yes.
+And my experience is that it's a good idea to know one's options, in
+order to make good choices.
+| What kind of data structures will you need?
+
+| Well, certainly both sequences and dictionaries/maps from keys to values.
+| Of course.
+|==================
+
+.Sequences
+[cols="2", width="100%"]
+|==================
+| For sequences, I take it I'll be using the list data type?
+| Much of the time, yes.
+And possibly also for things -- intermediate results -- where you
+wouldn't build a data structure at all in some other languages.
+
+| But the list type only gives quick access to the beginning of the sequence.
+It's a singly-linked list.
+Great for stacks, but how about e.g a queue -- where you need
+efficient access to both ends?
+| Then the +queue+ module is what you'll need.
+It provides O(1) insertion and _amortized_ O(1) extraction time.
+The same module also provides deque operations.
+
+(Erlang also has another kind of queue, by the way: the message queue
+of a process.  Sometimes you need a queue within a process, sometimes
+you need a queue between processes.)
+
+| And what if I need a sequence with efficient random access?
+What should I use for the kind of situations where I'd usually use an
+array or array-based list?
+| That depends on the usage pattern.
+
+If it's read-heavy, then an Erlang tuple is your array. You manipulate
+it with +element/2+ (O(1)) and +setelement/3+ (O(n)).
+And, for construction it in the first place, +make_tuple()+ and +list_to_tuple+.
++tuple_to_list()+ and +append_element()+ may also come in handy.
+
+If the content is less static, then look into the +array+ module for +O(log n)+ read and write operations.
+
+| I guess that's as good as you can do with purely functional data structures.
+| Yes.  If you need better than that -- or better time constants --
+  then you can use one of the key-value mapping data structures.
+
+On the other hand, if you expect to always operate on small data sets,
+then plain lists may be your best choice.
+|==================
+
+.Maps
+[cols="2", width="100%"]
+|==================
+| Maps from keys to values, then -- what are my options in that department?
+| The straight-forward choice is a property list -- a list of pairs.
+
+| Ah, I know that one.
+I can use the +proplists+ module to manipulate such a list.
+| You can, yes.
+_But_...
+
+| But what?
+| ...But +proplists+ actually handles a data structure a bit more general
+than lists-of-pairs: besides pairs, it recognizes atoms, which it
+takes to mean +{the_atom, true}+.
+
+| OK. nothing wrong with that.
+| Not as such, no; many function in the standard libraries which take
+  a property list of options understand that kind of shortcut.
+
+And it is a nice convention for configuration parameters and such, _but_...
+you have to consider the cost of that convenience feature, before
+using it in inner-loop like code.
+
+| The cost?  Are we talking about some premature optimization?
+| Call it premature if you must.
+Just be aware that an alternative to +proplists:lookup(Key, List)+,
+which does nearly the same thing except it doesn't handle the atom
+special case, is +lists:keyfind(Key, 1, List)+ -- which is 10 times faster.
+
+| Ah.  Perhaps we're talking more ``low hanging fruit'' here.
+| Indeed.
+
+| What other options are there for a key-value map data structure?
+| Next up are sorted property lists -- as handled by the +orddict+ module.
+They are on average twice as fast for lookups (given that the key is
+actually there), and more efficient for key union and intersection operations.
+
+We're still talking linear time, though, but also still with a small
+constant factor.
+
+| So still not something I'd use for large data sets.
+| No.  For those cases, your primary question would be, ``will I
+  require the keys to be ordered or not?''
+
+If you need ordered keys, then use +gb_trees+ -- balanced trees -- for
+O(log n) time operations.
+
+If you don't, then use +dict+ -- a hash table -- for O(1) lookup and
+O(n) insertion (with a quite small constant factor).
+
+And either way, if you don't need a persistent (purely functional)
+data structure, there are other options.
+
+| Do tell -- I can buy some performance by allowing destructive updates, right?
+| Yes.  It's not always worth it, but for the right kinds of data it is.
+
+| So what do I use for these kinds of data?
+| For ordered keys, you can use an ETS table of the ``ordered_set'' flavour.
+
+For unordered keys, you can use one of the ``set'' flavour.  (Or
+``bag'', or ``duplicate_bag'', if that's what you need.)
+
+``Set'' provides constant-time operations (like a hash table), while
+``ordered_set'' requires logarithmic-time (like a balanced tree).
+
+Finally, there's the process dictionary.
+It's there for you to use, but resist the temptation unless you must.
+
+|==================
+
+.Key-value store functional overview
+--------------------
+              ---Pure------   ---Ordered-----
+             /             \ /               \   ets (set)
+O(1)        /    dict    ___X___              \
+           /            /       \              \  pdict
+    .................../.........\...........................
+          |           |           |	      	|
+O(log n)  |           | gb_trees  |    ets     	|
+          |           |           |(ordered_set)|
+    .........................................................
+           \           \ orddict /             /
+            \ pair-list \___ ___/             /
+O(n)         \              X                /
+              -------------- ----------------
+--------------------
+
+//.Key-value store performance overview
+//--------------------
+//--------------------
+
