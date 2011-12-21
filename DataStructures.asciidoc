@@ -76,7 +76,7 @@ _But_...
 than lists-of-pairs: besides pairs, it recognizes atoms, which it
 takes to mean +{the_atom, true}+.
 
-| OK. nothing wrong with that.
+| OK.  Nothing wrong with that; being more general doesn't hurt.
 | Not as such, no; many function in the standard libraries which take
   a property list of options understand that kind of shortcut.
 
@@ -86,12 +86,22 @@ using it in inner-loop like code.
 
 | The cost?  Are we talking about some premature optimization?
 | Call it premature if you must.
+
 Just be aware that an alternative to +proplists:lookup(Key, List)+,
 which does nearly the same thing except it doesn't handle the atom
 special case, is +lists:keyfind(Key, 1, List)+ -- which is 10 times faster.
 
 | Ah.  Perhaps we're talking more ``low hanging fruit'' here.
 | Indeed.
+
+| How come it's that much faster?
+  Is the +proplists+ version implemented in a stupid manner?
+| No; the reason is that +lists:keyfind/3+ is a BIF - a built-in
+  function, written in C.  That gives it a performance edge.
+
+  (If there is any lesson in this, I guess it is: don't accidentally
+  reinvent any of the functions in the +lists+ module. You may gain
+  NIH points, but you may lose performance.)
 
 | What other options are there for a key-value map data structure?
 | Next up are sorted property lists -- as handled by the +orddict+ module.
