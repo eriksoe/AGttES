@@ -1,5 +1,5 @@
 Data structures
-==================================================
+===============
 Erik Søe Sørensen <eriksoe@gmail.com>
 
 // TODO: maybe some work on the titles.
@@ -147,8 +147,101 @@ O(log n)  |           | gb_trees  |    ets     	|
 O(n)         \              X                /
               -------------- ----------------
 --------------------
+// TODO: Make a graphics version of the above well-meant but ugly attempt at a set diagram.
 
 //.Key-value store performance overview
 //--------------------
 //--------------------
 
+.Strings
+[cols="2", width="100%"]
+|==================
+| How about strings?
+I'll need to manipulate textual data, too.
+| Once again, the right representation depends on what you're doing.
+There's of course the basic string type, which is just a list of
+characters, each represented by an integer.
+
+| And like any other list, that gives me easy access to the first elements,
+but slow access to the rest.
+| True.  For some applications, that's fine, of course -- parsing, for instance.
+
+| And there's also quite a bit of space overhead?
+| Yes.  Two words per character, to be specific -- which translates
+  into 8 bytes per character on a 32-bit platform.
+
+| That's a lot, if all you want to do is represent an ASCII string.
+| It is.  And if that data comes from e.g. a text file or a network packet,
+  it will have to be converted from the one-byte-per-character form into the
+  internal list representation.
+
+| And for a lot of applications, you're just going to put that same
+  data into a new file or network packet, which means the data will
+  have to be converted again, just in the other direction.
+  That's silly.
+| It is... Fortunately, the list representation is not the only option.
+
+| What else can I do?
+| You can use binaries -- the Erlang data type called `binary'.
+  Then you can keep the data in the same form the entire time.
+
+| Now that makes more sense.
+| And because that's a typical use of binaries -- starting and ending
+  their lifespans in a device driver of some sort, and perhaps going
+  through a few processes in between, binaries above a certain
+  threshold size are handled specially:
+
+They live outside the heap of any particular process, which means that
+they are not copied when they are sent from one process to another, and
+that they are not moved around by the normal process-heap garbage
+collections.
+
+| So, we have character lists, and we have binaries.
+
+  But neither of those types have efficient concatenation operations --
+  appending to a list is quite expensive (especially if you do it
+  repeatedly), and appending one large binary to another means
+  constructing a new, larger binary.
+| Actually, you can append to a binary repeatedly, rather cheaply:
+  the first time, some extra space will be allocated at the end ; if that
+  space is still free when the subsequent appendings take place, the binary
+  will not have to be moved.
+
+| But the data which is appended will still have to be copied.
+  If you concatenate two large binaries, at least one of them will have to
+  be copied.
+| True.
+  For such construction maneuvers, there is a third option.
+  It's called ``IO lists'' -- usually written as ``iolist''.
+
+  An iolist is a binary, or a list containing characters, binaries,
+  and/or sub-iolists.
+  (Impure lists are also allowed, as long as the final tail is a binary.)
+
+| That does obviate the need for costly concatenation operations.
+  But once I have such an iolist, what can I do with it?
+| If nothing else, you can apply +iolist_to_binary+ to it.
+  But many Erlang function which expect binaries or strings are also
+  able to handle iolists.  Look for it in the documentation.
+
+  Most significantly, I/O operations usually accept iolists.
+
+| And will I also have to accept iolists occasionally?
+| I/O input is typically pure binaries.
+  But some functions for constructing strings -- in particular,
+  +io_lib:format()+ -- return iolists; you may want to flatten those
+  (using +iolist_to_binary()+ or +lists:flatten()+) before you display
+  them or pass them to some entity which is not iolist-aware.
+
+a|So, all in all we have three string representations for three
+different scenarios:
+
+- character lists for deconstructing/parsing;
+- iolists for constructing; and
+- binaries for just passing through
+
+where the iolist is a generalization over both character lists and binaries.
+
+| That just about sums it up, yes.
+
+|==================
