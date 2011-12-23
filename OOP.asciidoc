@@ -119,6 +119,8 @@ Both length and clarity suffer when the record-access style is used,
 in these cases.
 
 |==================
+// TODO: Move the record access style away, into another lower-level discussion.
+
 
 == Shared mutable state ==
 
@@ -257,4 +259,267 @@ bottleneck in the system).
 
 [cols="2", width="100%"]
 |==================
+| We've talked about how to deal with single classes.  But how about
+  class hierarchies?  Polymorphism?  I don't see how that translates
+  into Erlang concepts.
+| I'd like us to consider two different flavours of polymorphism: the
+  kind where the class hierarchy is fixed (``closed''), and the kind
+  where the hierarchy is meant to be extended with new subclasses,
+  possibly outside our control.
+
+| All right. In at least certain cases, the set of subtypes are fixed
+  -- tree representations, for instance, or enumerations, or a
+  strategy pattern with a fixed set of strategies.
+| Indeed. When you have functions operating on polymorphic data,
+  rather than methods as part of classes, the difference matters
+  -- because one function will may have to know about all of the subtypes.
+
+| Yes... that bothers me, though; that means that you can't add a
+  subtype without having to add knowledge of that type to all of the
+  functions which operate on that type hierarchy.
+| If you were to add the same subtype in an OOP language, you'd have
+  to write all of the methods of that class (except where you can use
+  the derived version).
+  It's the same amount of knowledge you need to add in either case.
+
+| Right, but in one case it's scattered all over the place, while in
+  the other it's local -- collected in one place.
+
+| Try considering the opposite case, though: Adding an operation -- a
+  function or a method.
+  Then the roles change: In the functional language, you write a new
+  function in one place, whereas in OOP you need to add the method in
+  many classes -- the new functionality ends up being scattered all
+  over the place.
+
+| Ah. It is like two views of the same... like a table where rows are
+  subtypes and columns are operations; the OOP language presents the
+  table row-by-row while the functional language presents it
+  column-by-column.
+| I suppose you can use that analogy, yes.
+
+  Note that in both kinds of language, you can change the direction if
+  you want to -- it just fits a little less naturally into the
+  language.
+
+| I think it's time for an example;
+  this sounds like the kind of thing I'd rather have demonstrated than explained.
+| Probably a good idea.
+
+  For an illustrative example, I suggest that we look at a calculator example -- where we model and evaluate mathematical expressions.
+
+a|
+Here's the class hierarchy I'd use:
+
+..........
+abstract class Expression {}
+class Constant extends Expression {
+    final double c;
+}
+
+abstract class BinOp extends Expression {
+    final Expression left, right;
+}
+
+class Add extends BinOp {}
+class Mul extends BinOp {}
+..........
+
+I've omitted the constructors, and saved the operations for later.
+(And in real life I'd of course need more subclasses.)
+
+a|
+Here's how an Erlang equivalent might look:
+
+..........
+constant(C) where is_number(C) -> C.
+add(L,R) -> {binop, '+', L, R}.
+mul(L,R) -> {binop, '*', L, R}.
+..........
+
+a|
+Let's add an `evaluate' operation...:
+
+..........
+In class Expression:
+    public abstract double evaluate();
+
+In class Constant:
+    public double evaluate() {return c;}
+
+In class Add:
+    public double evaluate() {
+        return left.evaluate() + right.evaluate();
+    }
+
+In class Mul:
+    public double evaluate() {
+        return left.evaluate() * right.evaluate();
+    }
+..........
+
+a|
+And the Erlang equivalent:
+..........
+evaluate(C) when is_number(C) -> C;
+evaluate({binop, '+', L, R}) -> evaluate(L) + evaluate(R);
+evaluate({binop, '*', L, R}) -> evaluate(L) * evaluate(R).
+..........
+
+a|
+Just for illustrating a derived method, let's also add an operation
+which calculates the size of the expression tree:
+
+..........
+In class Expression:
+    public abstract int tree_size();
+
+In class Constant:
+    public int tree_size() {return 1;}
+
+In class BinOp:
+    public int tree_size() {
+        return left.tree_size() + right.tree_size();
+    }
+..........
+
+a|
+In Erlang, I use pattern matching to obtain the same effect:
+..........
+tree_size(C) when is_number(C) -> 1;
+tree_size({binop, _, L, R}) -> tree_size(L) + tree_size(R).
+..........
+
+a|
+So much for adding new operations.
+Now I want to add a new subtype -- subtraction, for instance.
+
+That's nicely local in OOP:
+
+..........
+class Sub extends BinOp {
+    public double evaluate() {
+        return left.evaluate() - right.evaluate();
+    }
+}
+..........
+
+a|
+...Whereas in Erlang, you'd need to add clauses to the existing functions
+-- in this case, just +evaluate()+:
+
+..........
+evaluate({binop, '-', L, R}) -> evaluate(L) - evaluate(R);
+..........
+
+| But you talked about changing the direction, the `major axis' so
+  to speak -- so that in OOP, adding an operation can be done locally,
+  while adding a subtype means scattered additions.
+| Yes.  That means implementing the operation as a single function,
+  perhaps externally to the class hierarchy, and testing the concrete
+  type of the operand. Or, alternatively, using the Visitor pattern.
+
+a|
+Right -- that would be like this, in Java:
+..........
+static double evaluate(Expression e) {
+    if (e instanceof Constant) {
+        return ((Constant)e).c;
+    } else if (e instanceof Add) {
+        Add e2 = (Add)e;
+        return evaluate(e2.left) + evaluate(e2.right);
+    } else if (e instanceof Mul) {
+        Mul e2 = (Mul)e;
+        return evaluate(e2.left) * evaluate(e2.right);
+    } else {
+        throw new RuntimeException(
+            "Unknown expression type: "+e.getClass().getName());
+    }
+}
+..........
+
+That pretty much amounts to emulating the functional solution.
+
+a|
+To similarly emulate the OOP solution in Erlang, we include a method
+table when we create the objects:
+
+..........
+%% The abstract superclass Exp:
+-record(exp, {eval, tree_size}).
+evaluate (#exp{eval     =F}=Obj) -> F(Obj).
+tree_size(#exp{tree_size=F}=Obj) -> F(Obj).
+
+%% class Constant:
+constant(C) where is_number(C) ->
+    #exp{data=C,
+         eval=fun eval_constant/1,
+	 tree_size=fun ts_constant/1}.
+eval_constant(#exp{data=Data}) -> Data.
+ts_constant(#exp{}) -> 1.
+
+%% abstract class BinOp:
+binop(L,R,EvalFun) ->
+    #exp{data={L,R},
+         eval=EvalFun,
+         tree_size=fun ts_binop/1}.
+ts_binop(#exp{data={L,R}}) ->
+    tree_size(L) + tree_size(R).
+
+%% classes Add and Mul:
+add(L,R) -> binop(L, R, eval=fun eval_add/1).
+mul(L,R) -> binop(L, R, eval=fun eval_mul/1).
+
+eval_add(#exp{data={L,R}}) ->
+    evaluate(L) + evaluate(R).
+eval_mul(#exp{data={L,R}}) ->
+    evaluate(L) * evaluate(R).
+..........
+
+| With these versions, a new operation can be added to the OOP version
+  without changing existing classes, and similarly, a new subtype can
+  be added to the Erlang version without changing existing functions.
+a|
+Hybrids exist, too -- suppose that we wish to support a number of
+mathematical functions, but we don't know the full set yet. Then we
+can make an extension point only for the relevant subtype:
+
+..........
+%% The abstract supertype:
+-record(function_exp, {eval, arg}).
+make_fun_exp(EvalFun, ArgExp) ->
+    #function_exp{eval=EvalFun, arg=ArgExp}.
+
+%% New clause in eval():
+evaluate(#function_exp{eval=EvalFun, arg=ArgExp}) ->
+    EvalFun(evaluate(ArgExp));
+
+%% New clause in tree_size():
+tree_size(#function_exp{arg=ArgExp}) ->
+    1 + tree_size(ArgExp);
+
+%% Example subtypes:
+sin(Exp) ->
+    make_fun_exp(fun math:sin/1, Exp).
+reciproc(Exp) ->
+    make_fun_exp(fun (X)-> 1.0 / X end, Exp).
+..........
+
+Then we can add subtypes of ``Function expression'' without changing existing code.
+On the other hand, when we add new operations, we may need to add
+methods to the +#function_exp+ record -- we'll have to if the subtypes
+differ in their behaviour for that operation (like in +eval()+), but
+we can leave the record as-is if the subtypes behave identically with
+respect to the operation (like in +tree_size()+), or if it can be
+defined in terms of existing methods.
+
+| So, to sum up, there's a choice to be made with respect to expected
+  extensions -- regardless of the language.
+| There is. You can choose to be able to extend with new subtypes, or with new
+  operations, or with some kinds of subtypes and some kinds of
+  operations, as long as the two are compatible.
+
+  And that choice is independent of the language -- although languages
+  differ in what they encourage.
+
 |==================
