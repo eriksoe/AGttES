@@ -1,0 +1,23 @@
+Introduction
+============
+
+In order to design well, you will need to know your options and their
+immediate implications.
+This applies both to large-scale design and to the small details.
+
+The present text is intended to enlighten on the topology of the
+design spaces -- large and small -- which are often encountered when
+developing in the Erlang programming language, and the paradigm that
+is associated with it.
+
+The target audience is people who already know how to program, and
+also knows the basics of Erlang, but perhaps not how to apply them to
+real-life design and implementation problems.
+
+For most of the presentation, I've chosen a dialogue-based style --
+inspired in part by the question-and-answer form used in ``The Little
+LISPer,'' although not by too much.
+I hope it will provide a good flow and engage the reader.
+(The matters discussed are of course of such an immensely interesting
+nature that you would be spellbound under any circumstances, but form
+matters as well.)
