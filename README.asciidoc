@@ -1,0 +1,13 @@
+A Guide to the Erlang Style
+===========================
+
+Note that this is all work in progress.
+
+Feedback via github, or to eriksoe at gmail dot com.  Thank you!
+
+== Table of contents @ GitHub: ==
+. link:Introduction.asciidoc[Introduction]
+. link:DataStructures.asciidoc[Data Structures]
+. link:OOP.asciidoc[OOP]
+
+  - link:OOP-overview.asciidoc[Object representation summary table]
