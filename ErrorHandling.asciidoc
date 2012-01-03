@@ -1,0 +1,103 @@
+Error Handling
+==============
+Erik Søe Sørensen <eriksoe@gmail.com>
+
+[cols="2", width="100%"]
+|====================
+| How do you do error handling in Erlang? +
+As I understand it, it's somewhat different than in other languages.
+| The inter-process part certainly is.
+
+As for intra-proces error handling, it's basically the same as in
+other modern languages: you can signal errors with special return
+values, or you can throw exceptions.
+|====================
+
+== Error-signalling return values ==
+[cols="2", width="100%"]
+|====================
+| In typed languages, common special return values are `null` or
+  negative integers, depending on the type. Or `none` if the language
+  has an option type.
+|
+ In Erlang, which is dynamically-typed and symbolic, you typically
+  use an ``error tuple''.
+  I.e. +{error, Tag}+, where +Tag+ is an atom
+  describing the kind of error, or -- if you want to add details --
+
+| -- then you'd probably add it like this: `{error, Tag, Details}`, right?
+| Well, no. Typically you wouldn't do that -- because the custom is to
+  expect a 2-tuple, to catch it with the pattern `{error, Reason}`.
+  And a 3-tuple wouldn't match that.
+
+| Ah, right.  So you'd say `{error, {Tag, Details}}` instead. Even
+  though the extra tupling might look superfluous.
+
+  Anything else to be aware of?
+
+a|
+You certainly shouldn't pair just anything with `error` and call it
+  an error tuple.
+  In particular, don't wrap one error tuple in another -- like it is done here:
+
+----------
+case file:open(FileName, Modes) of
+  %% open() returns {ok,_} \| {error,_}
+  {ok, Fd} -> something_good(Fd);
+  Error    -> {error, Error}
+end.
+----------
+
+That would result in a value like `{error, {error, ...}}` which is
+more confusing than informative.
+
+| You do get to know a measure of how many levels deep the original error were, though...
+| Yes, but it is still debatable whether it's better or worse than nothing.
+
+| So instead, I should just return `Error` -- the original error tuple?
+a|
+Yes; either that or tag it anew with something providing a bit of context:
+
+----------
+  {error,_}=Error -> Error
+%% or:
+  {error,Reason} -> {error, {opening_the_foo_file_failed, Reason}}
+%% or, if you want to add details:
+  {error,Reason} -> {error, {opening_the_foo_file_failed, Reason, Filename}}
+----------
+
+That way, the error message will tell not only what went wrong (``file
+not found``), but also what the program was trying to do at the time
+-- a description at a higher level.
+
+|====================
+
+== Exceptions ==
+[cols="2", width="100%"]
+|====================
+|====================
+
+//////////
+- same advice as for error tuples: don't throw any untagged data;
+don't throw error tuples. Often useful to add a describing tag (but at least you've got the stack trace).
+- throw vs. error vs. EXIT
+- cf. groups in Java: Error, RuntimeException, other Exceptions
+- logging traces; re-raising.
+  Don't: catch, then throw something new. Unless you're sure you won't need the stacktrace.
+//////////
+
+
+== Understanding error messages ==
+
+//////////
+Built-in error tags
+- {error, _} return values
+- error:{badmatch, ActualValue}
+- error:{function_clause, ActualArgs}
+- error:{case_clause, ActualValue}
+- error:{if_clause, ??}
+- error:{badtuple, ??}
+//////////
+
+
+// Should inter-process error handling be dealt with here or elsewhere?
