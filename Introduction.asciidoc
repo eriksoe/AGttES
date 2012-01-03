@@ -14,6 +14,14 @@ The target audience is people who already know how to program, and
 also knows the basics of Erlang, but perhaps not how to apply them to
 real-life design and implementation problems.
 
+Or put in another way, in terms of the _Dreyfus model of skill acquisition_:
+the target reader is at the very least ``competent'' with respect to
+designing and programming in one or more programming languages, but is
+a ``novice'' or ``advanced beginner'' with respect to working with Erlang.
+(Or possibly more experienced than that, but curious about new perspectives on
+known material.)
+
+
 For most of the presentation, I've chosen a dialogue-based style --
 inspired in part by the question-and-answer form used in ``The Little
 LISPer,'' although not by too much.
