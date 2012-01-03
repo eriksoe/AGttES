@@ -1,4 +1,7 @@
-all: Introduction.html DataStructures.html OOP.html OOP-overview.html Test.html
+SRCS = $(wildcard *.asciidoc)
+DESTS = $(patsubst %.asciidoc,%.html,${SRCS})
+
+all: ${DESTS}
 
 clean:
 	rm *.html || true
