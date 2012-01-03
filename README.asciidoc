@@ -11,3 +11,5 @@ Feedback via github, or to eriksoe at gmail dot com.  Thank you!
 . link:https://github.com/eriksoe/AGttES/blob/master/OOP.asciidoc[OOP]
 
   - link:https://github.com/eriksoe/AGttES/blob/master/OOP-overview.asciidoc[Object representation summary table]
+
+. link:https://github.com/eriksoe/AGttES/blob/master/ErrorHandling.asciidoc[Error handling]
