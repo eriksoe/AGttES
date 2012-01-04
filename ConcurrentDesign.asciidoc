@@ -1,0 +1,55 @@
+Concurrent Design
+=================
+Erik Søe Sørensen <eriksoe@gmail.com>
+
+== Designing with processes ==
+[cols="2", width="100%"]
+|==================
+|==================
+
+
+//////////
+"How Many Processes Should I Have?"
+Many answers (as for "how many objects should I have"):
+- One per concurrent activity.
+- One per story (e.g., session)
+- One per resource: file (or group of strongly related files); socket;
+  table/data; conceptual stateful object
+- One per (major) object with lifespan
+Primary answer:
+- The passive ones: One per resource.
+- The active ones: One per natural concurrent activity.
+
+Kinds of processes:
+- Resource holders - file; socket; table/data; session state
+  - These are the primary ones.
+- Adapters/proxies (modifies *what is sent*)
+- Distributors/repeaters/publishers (modifies *to whom* it is sent)
+- Process -- i.e. task with independent lifespan
+  - These are the other primary ones.
+- Decision taker?
+- Supervisors
+
+Some questions:
+- What state will you need to keep around -- and for how long?
+  Is its lifetime bound to that of some task?
+- How busy would each candidate process likely be?
+  Which collaborators would it have?
+  Which resources would it own?
+- Are there singletons?
+  Are the singletons necessary?
+  Are the singletons too busy -- and could the workload be split up?
+  (measure!)
+
+Why parallel map isn't usually done:
+- Erlang is not for doing something fast, it's for doing the right
+  thing (making the right decisions) fast enough.
+- There is a limit (to number of processes), after all.
+
+Just as in OOP, it may turn out that it is best to split or merge processes
+compared with the original design.
+- Split if one process talks to too many (i.e., has to handle input from too many different sources), or does too many unrelated things
+- Merge if two processes turn out to have to act in lockstep anyway -- and work too hard to keep in sync
+
+"Getting It Right - avoiding race conditions"
+//////////
