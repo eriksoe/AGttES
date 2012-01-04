@@ -1,8 +1,7 @@
-Concurrent Design 2
-===================
+Concurrent Design Revisited
+===========================
 Erik Søe Sørensen <eriksoe@gmail.com>
 
-== Getting It Right -- avoiding race conditions ==
 [cols="2", width="100%"]
 |==================
 | I've been had!
@@ -52,8 +51,16 @@ Erik Søe Sørensen <eriksoe@gmail.com>
 
   (I had programmed multi-threaded Java applications for a few years before I learned of the Java Memory Model (http://www.cs.umd.edu/~pugh/java/memoryModel/jsr133.pdf; http://java.dzone.com/articles/multithreading-and-java-memory). +
   Apparently you can't assume anything unless it is explicitly guaranteed.
+| Apparently not.
+  You need to know your building blocks -- doubly so when concurrency
+  is in the picture.
 
-  But, how then to attack race conditions?
+|==================
+
+== Getting Process Interaction Right ==
+[cols="2", width="100%"]
+|==================
+| But, how then to attack the problem of avoiding race conditions?
 
 |
 |==================

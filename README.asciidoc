@@ -13,3 +13,6 @@ Feedback via github, or to eriksoe at gmail dot com.  Thank you!
   - link:https://github.com/eriksoe/AGttES/blob/master/OOP-overview.asciidoc[Object representation summary table]
 
 . link:https://github.com/eriksoe/AGttES/blob/master/ErrorHandling.asciidoc[Error handling]
+
+. link:https://github.com/eriksoe/AGttES/blob/master/ConcurrentDesign.asciidoc[Concurrent Design]
+. link:https://github.com/eriksoe/AGttES/blob/master/ConcurrentDesign2.asciidoc[Concurrent Design Revisited]
