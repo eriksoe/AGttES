@@ -1,6 +1,12 @@
-Concurrent Design Revisited
-===========================
+Interaction Design
+==================
 Erik Søe Sørensen <eriksoe@gmail.com>
+
+(Note: ``Interaction design'', in this context, means interaction
+between processes. It is not to be confused with the field of
+Interaction Design, which is concerned with human-computer
+interaction.)
+
 
 [cols="2", width="100%"]
 |==================
@@ -49,18 +55,102 @@ Erik Søe Sørensen <eriksoe@gmail.com>
 | Okay, so the potential problems and causes are only where I might
   expect them to be.  I guess that's an improvement.
 
-  (I had programmed multi-threaded Java applications for a few years before I learned of the Java Memory Model (http://www.cs.umd.edu/~pugh/java/memoryModel/jsr133.pdf; http://java.dzone.com/articles/multithreading-and-java-memory). +
-  Apparently you can't assume anything unless it is explicitly guaranteed.
+  (I had programmed multi-threaded Java applications for a few years before I learned of the Java Memory Model (http://www.cs.umd.edu/~pugh/java/memoryModel/jsr133.pdf; http://java.dzone.com/articles/multithreading-and-java-memory. +
+  Apparently you can't assume anything unless it is explicitly guaranteed.)
 | Apparently not.
   You need to know your building blocks -- doubly so when concurrency
   is in the picture.
 
 |==================
 
+== The Givens ==
+
+[cols="2", width="100%"]
+|==================
+| The primary inter-process communication primitive in Erlang is of
+  course message passing.
+
+  Is there anything I need to know about it, in the context of
+  avoiding race conditions and similar surprises?
+
+| What would you need to know in e.g. Java?
+
+| I'd need to know which causal guarantees the language provides.
+  Which ``happens-before'' relations I can rely on.
+| Right.
+  As for events within the same process, these are ordered
+  according to that process's progress.
+| That's pretty standard.
+
+| Yes. As for inter-process communication:
+  Compared to most other languages, things are mostly simpler in
+  Erlang -- because data immutability means that there's no read-write
+  or write-write races. Not at the language level, at least.
+
+| Why ``mostly simpler,'' then?  Is there something that makes it harder?
+| Yes: distribution. Most other languages don't have to worry about
+  different parts of the program running on different machines --
+  transparently.
+
+| No, that is true. So, what guarantees are we given for message passing?
+| This one:
+  If one process P sends message A to another process Q, before it
+  sends message B to Q, then A will appear before B in Q's inbox.
+
+| That's it?
+| That's it. Just a process-pair-wise message ordering guarantee.
+  Plus, of course, the intra-process event ordering, and the fact that
+  the sending of a message _happens-before_ the reception of that same
+  message.
+
+| But surely... some kind of triangle inequality must apply?
+| How do you mean?
+
+| That if P sends a message A to R, and then sends a message B to Q
+  which on reception will send B' to R, then R will observe that A
+  comes before B'?
+| No, sorry.  We can't assume that.
+
+| But why not?  It sounds like a reasonable thing to assume.
+| It has mainly to do with distribution.
+
+  Consider the case where the three processes P, Q and R reside on
+  different nods NP, NQ and NR. +
+  These nodes are pair-wise connected through a network link. +
+  Assume furthermore that the link NP->NR is very busy.
+
+| Ah. Then, because the NP->NQ and NQ->NR links are less busy, the
+  message which goes via Q may overtake the one which is sent
+  directly.
+| Yes. So the only way to ensure that A is received before B' is to
+  not send B' before the reception of A has been acknowledged.
+
+a|
+So, to sum up...
+
+  . Events within a process are ordered according to the evaluation order of
+    Erlang.
+  . The sending of a message _happens-before_ the reception of that same
+    message.
+  . The reception (in the inbox) of two messages _from the same
+    process_ are related with _happens-before_ if the sending of the
+    two messages are related with _happens-before_.
+
+| And ``happens-before'' is a transitive relationship, meaning that
+    if A _happens-before_ B, and B _happens-before_ C, then A
+    _happens-before_ C.
+
+Note, by the way, that the evaluation order is undefined in some
+cases. This is not usually a problem, however.
+
+|==================
+
+
 == Getting Process Interaction Right ==
 [cols="2", width="100%"]
 |==================
-| But, how then to attack the problem of avoiding race conditions?
+| Now that we know what we can rely on, how do we then attack the problem
+ of avoiding race conditions?
 
 |
 |==================
