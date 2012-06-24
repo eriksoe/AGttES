@@ -5,6 +5,79 @@ Erik Søe Sørensen <eriksoe@gmail.com>
 == Designing with processes ==
 [cols="2", width="100%"]
 |==================
+| So I'm going to design an Erlang application.
+ How many processes should I have, and which?
+| Just as for the question "how many objects should I have", there are
+  many possible answers, ...
+
+| I've heard that processes are Erlang's equivalent of objects.
+  Is that true?  It sounds a bit wasteful to me.
+| In principle, you could take an OOP system and make each object into
+  a separate process -- but that would be a bad idea for a lot of
+  reasons (performance, memory consumption, maintainability,
+  debuggability, wrong use of a tool).
+
+  Everything may be an object, but it takes something to qualify for
+  being a process.
+
+//  (That being said, Erlang processes appears to match quite nicely with Alan
+//  Kay's original idea of OOP.)
+//  TODO: Fact-check this ^^
+
+| OK -- I did think it sounded too simple to be good practise.
+
+  Out of curiousity: If I came by an application written in such a
+  fashion -- if only partly -- how would I be able to detect it?
+| The tell-tale signs of that approach -- beside the abundance of
+  processes, of course -- would probably be that many processes had a
+  small, fixed state, and that most of the communication between
+  processes would be synchronous.
+
+//  Processes which neither allow the system do more things
+//  simultaneously (work at independent rates) nor serve to separate
+//  responsibilities (be changed independently, or have different
+//  lifetimes) typically do not add much.
+
+  Processes should typically by their existence contribute with either
+  concurrency, clarity of code, ownership of resources, or uniformity
+  of interfaces.
+
+| I've also heard that Erlang is great for parallel computations,
+  because you can cheaply create a new process whenever there's an
+  opportunity for doing two things in parallel. How about that?
+
+| That's another extreme.  Don't do that either.
+  It's like saying in OOP that whenever you can use inheritance for
+  reusing code, you should.
+
+  Creating a process is cheap compared to other languages, but there's
+  still a cost -- and communicating inputs and results between
+  processes introduces some overhead. So first of all, don't do it for
+  too small tasks.
+
+  And like any other performance optimization which costs in code clarity,
+  don't do it prematurely. Do it only when you've measured that it
+  might be a good idea -- and only where your measurements show
+  that it might be worth it. And remember to measure afterwards that
+  the result is in fact a speedup which outweighs the extra
+  complexity.
+
+| Okay, enough about extremes; people say so much (especially straw men).
+
+  Returning to my question of which processes to have: +
+  You mentioned certain valid /raison d'être/s of processes --
+  concurrency, clarity of code, ownership of resources, and uniformity
+  of interfaces?
+
+  Could you elaborate on these?
+| Certainly... +
+  The common denominator is separation of concerns.
+
+(TODO)
+// clarity of code is probably the most important, but it is often
+// combined with one of the other reasons.
+// The overarching, unifying reason is actually "separation of concerns".
+
 |==================
 
 
@@ -29,6 +102,7 @@ Kinds of processes:
   - These are the other primary ones.
 - Decision taker?
 - Supervisors
+Like in OOP: there are many kinds of objects.
 
 Some questions:
 - What state will you need to keep around -- and for how long?
@@ -51,5 +125,11 @@ compared with the original design.
 - Split if one process talks to too many (i.e., has to handle input from too many different sources), or does too many unrelated things
 - Merge if two processes turn out to have to act in lockstep anyway -- and work too hard to keep in sync
 
-"Getting It Right - avoiding race conditions"
+
+Reasons for refactoring, introducing extra objects, reassigning
+responsibilities, etc.:
+- OOP: to improve flexibility (extensibility), to simplify
+- Erlang: Same, plus to improve scalability or consistency; to
+  simplify or robustify process interactions (often, error handling)
+
 //////////
