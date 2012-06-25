@@ -71,7 +71,25 @@ Erik Søe Sørensen <eriksoe@gmail.com>
 
   Could you elaborate on these?
 | Certainly... +
-  The common denominator is separation of concerns.
+  The common theme is separation of concerns.
+// and matching data and process life spans?
+
+  To take the most concrete first: Some processes are centered around a
+  certain resource; this can be either some data (in normal term form
+  or contained in a table) or a port (file, socket or connection to
+  non-Erlang program).
+// ownership vs. controlling access
+
+(TODO)
+
+| When can concurrency be a reason for a process to exist?
+| Using processes for getting concurrency can be done for
+  getting I/O concurrency, CPU concurrency, or scalability.
+
+// For I/O concurrency: often comes naturally, with ownership of e.g. sockets.
+// For CPU concurrency: is often a conscious choice. Make sure it's well-founded, especially if it adds complexity.
+//  (i.e., parallel computation)
+// For scalability: also a conscious choice. A responsibility is split among several processes; it can be by sharding of some data space (e.g. a table) or more symmetric (e.g., several acceptors on one socket).
 
 (TODO)
 // clarity of code is probably the most important, but it is often
